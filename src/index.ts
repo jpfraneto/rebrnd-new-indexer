@@ -119,13 +119,18 @@ const updateUserEngagement = async (
     const favoriteBrandId = userBrandCounts[0]?.brandId || null;
 
     // Get unique voted brands count
-    const uniqueBrandsCount = await context.db.sql
-      .select({ count: "COUNT(DISTINCT brandId)" })
+    const allBrandIds = await context.db.sql
+      .select({
+        brandId: userBrandRankings.brandId,
+      })
       .from(userBrandRankings)
       .where(eq(userBrandRankings.userFid, fid))
       .execute();
 
-    const votedBrandsCount = uniqueBrandsCount[0]?.count || 0;
+    const uniqueBrandIds = new Set(
+      allBrandIds.map((row: { brandId: number }) => row.brandId)
+    );
+    const votedBrandsCount = uniqueBrandIds.size;
 
     await context.db.update(users, { fid }).set({
       points: existingUser.points + pointsToAdd,
@@ -433,6 +438,13 @@ const updateUserBrandRankings = async (
     const brandId = brandIds[i];
     const pointsToAdd = points[i];
     const position = positions[i];
+
+    if (
+      brandId === undefined ||
+      pointsToAdd === undefined ||
+      position === undefined
+    )
+      continue;
 
     const userBrandId = `${userFid}-${brandId}`;
     const existing = await context.db.find(userBrandRankings, {
@@ -818,8 +830,8 @@ ponder.on("BRNDSEASON1:BrandsCreated", async ({ event, context }) => {
 
   const brandsToInsert = brandIds.map((brandId: number, index: number) => ({
     id: Number(brandId),
-    fid: Number(fids[index]),
-    walletAddress: walletAddresses[index]!.toLowerCase(),
+    fid: Number(fids[index] ?? 0),
+    walletAddress: (walletAddresses[index] ?? "").toLowerCase(),
     handle: handles[index] || "",
     metadataHash: "",
     totalBrndAwarded: 0n,
@@ -871,7 +883,9 @@ ponder.on("BRNDSEASON1:RewardClaimed", async ({ event, context }) => {
 
   // Update vote record with claim info
   const existingVote = await context.db.sql
-    .select()
+    .select({
+      id: votes.id,
+    })
     .from(votes)
     .where(and(eq(votes.voterFid, Number(fid)), eq(votes.day, day)))
     .limit(1)
@@ -960,7 +974,7 @@ ponder.on("BRNDSEASON1:BrndPowerLevelUp", async ({ event, context }) => {
       transactionHash: transaction.hash,
       lastUpdated: block.timestamp,
     })
-    .onConflictDoUpdate((existing) => ({
+    .onConflictDoUpdate((existing: typeof users.$inferInsert) => ({
       brndPowerLevel: Number(newLevel),
       blockNumber: block.number,
       transactionHash: transaction.hash,
