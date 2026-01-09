@@ -29,39 +29,41 @@ const IPFS_RATE_LIMIT = 500; // 500ms between calls
 
 const fetchFromIpfs = async (hash: string): Promise<any | null> => {
   if (!hash) return null;
-  
+
   // Check cache first
   if (ipfsCache.has(hash)) {
     return ipfsCache.get(hash);
   }
-  
+
   // Rate limiting
   const now = Date.now();
   const timeSinceLastCall = now - lastIpfsCall;
   if (timeSinceLastCall < IPFS_RATE_LIMIT) {
-    await new Promise(resolve => setTimeout(resolve, IPFS_RATE_LIMIT - timeSinceLastCall));
+    await new Promise((resolve) =>
+      setTimeout(resolve, IPFS_RATE_LIMIT - timeSinceLastCall)
+    );
   }
-  
+
   try {
     const response = await fetch(`https://gateway.pinata.cloud/ipfs/${hash}`, {
       headers: {
-        'User-Agent': 'BRND-Indexer/1.0',
+        "User-Agent": "BRND-Indexer/1.0",
       },
       signal: AbortSignal.timeout(10000), // 10s timeout
     });
-    
+
     lastIpfsCall = Date.now();
-    
+
     if (!response.ok) {
       console.error(`IPFS fetch failed for ${hash}: ${response.status}`);
       return null;
     }
-    
+
     const data = await response.json();
-    
+
     // Cache the result
     ipfsCache.set(hash, data);
-    
+
     return data;
   } catch (error) {
     console.error(`IPFS fetch error for ${hash}:`, error);
@@ -775,14 +777,6 @@ const updateUserLeaderboard = async (
 ponder.on("BRNDSEASON1:PodiumCreated", async ({ event, context }) => {
   const { voter, fid, brandIds, cost } = event.args;
   const { block, transaction } = event;
-  console.log("Processing PodiumCreated event:", {
-    voter,
-    fid,
-    brandIds,
-    cost,
-    block,
-    transaction,
-  });
 
   const day = calculateDayNumber(block.timestamp);
   const voteId = transaction.hash;
@@ -865,26 +859,15 @@ ponder.on("BRNDSEASON1:PodiumCreated", async ({ event, context }) => {
 ponder.on("BRNDSEASON1:BrandCreated", async ({ event, context }) => {
   const { brandId, handle, fid, walletAddress, createdAt } = event.args;
   const { block, transaction } = event;
-  
+
   // Extract metadataHash from event args (new in BRNDSeason2)
   const metadataHash = (event.args as any).metadataHash || "";
-  
-  console.log("Processing BrandCreated event:", {
-    brandId,
-    handle,
-    fid,
-    walletAddress,
-    createdAt,
-    metadataHash,
-  });
-  
+
   // Fetch metadata from IPFS if hash is provided
   let brandData: any = {};
   if (metadataHash) {
-    console.log(`Fetching IPFS metadata for brand ${brandId} with hash: ${metadataHash}`);
     brandData = await fetchFromIpfs(metadataHash);
     if (brandData) {
-      console.log(`Successfully fetched metadata for brand ${brandId}:`, brandData);
     }
   }
 
@@ -912,32 +895,25 @@ ponder.on("BRNDSEASON1:BrandCreated", async ({ event, context }) => {
 ponder.on("BRNDSEASON1:BrandsCreated", async ({ event, context }) => {
   const { brandIds, handles, fids, walletAddresses, createdAt } = event.args;
   const { block, transaction } = event;
-  
+
   // Extract metadataHashes from event args (new in BRNDSeason2)
   const metadataHashes = (event.args as any).metadataHashes || [];
-  
-  console.log("Processing BrandsCreated event:", {
-    brandIds: brandIds.length,
-    hasMetadataHashes: metadataHashes.length > 0,
-  });
 
   const brandsToInsert = [];
-  
+
   for (let index = 0; index < brandIds.length; index++) {
     const brandId = brandIds[index];
     const handle = handles[index] || "";
     const metadataHash = metadataHashes[index] || "";
-    
+
     // Fetch metadata from IPFS if hash is provided
     let brandData: any = {};
     if (metadataHash) {
-      console.log(`Fetching IPFS metadata for brand ${brandId} with hash: ${metadataHash}`);
       brandData = await fetchFromIpfs(metadataHash);
       if (brandData) {
-        console.log(`Successfully fetched metadata for brand ${brandId}:`, brandData);
       }
     }
-    
+
     brandsToInsert.push({
       id: Number(brandId),
       fid: Number(fids[index] ?? 0),
@@ -981,15 +957,6 @@ ponder.on("BRNDSEASON1:WalletAuthorized", async ({ event, context }) => {
 ponder.on("BRNDSEASON1:RewardClaimed", async ({ event, context }) => {
   const { recipient, fid, amount, castHash, caller } = event.args;
   const { block, transaction } = event;
-  console.log("Processing RewardClaimed event:", {
-    recipient,
-    fid,
-    amount,
-    castHash,
-    caller,
-    block,
-    transaction,
-  });
 
   const day = calculateDayNumber(block.timestamp);
   const claimId = transaction.hash;
@@ -1111,24 +1078,15 @@ ponder.on("BRNDSEASON1:BrndPowerLevelUp", async ({ event, context }) => {
 ponder.on("BRNDSEASON1:BrandUpdated", async ({ event, context }) => {
   const { brandId, newMetadataHash, newFid, newWalletAddress } = event.args;
   const { block, transaction } = event;
-  
-  console.log("Processing BrandUpdated event:", {
-    brandId,
-    newMetadataHash,
-    newFid,
-    newWalletAddress,
-  });
-  
+
   // Fetch updated metadata from IPFS if hash is provided
   let brandData: any = {};
   if (newMetadataHash) {
-    console.log(`Fetching updated IPFS metadata for brand ${brandId} with hash: ${newMetadataHash}`);
     brandData = await fetchFromIpfs(newMetadataHash);
     if (brandData) {
-      console.log(`Successfully fetched updated metadata for brand ${brandId}:`, brandData);
     }
   }
-  
+
   const updateData: any = {
     metadataHash: newMetadataHash,
     fid: Number(newFid),
@@ -1137,14 +1095,15 @@ ponder.on("BRNDSEASON1:BrandUpdated", async ({ event, context }) => {
     transactionHash: transaction.hash,
     lastUpdated: block.timestamp,
   };
-  
+
   // Update IPFS metadata fields if available
   if (brandData) {
     if (brandData.name) updateData.name = brandData.name;
     if (brandData.description) updateData.description = brandData.description;
     if (brandData.imageUrl) updateData.imageUrl = brandData.imageUrl;
     if (brandData.warpcastUrl) updateData.warpcastUrl = brandData.warpcastUrl;
-    if (brandData.channelOrProfile) updateData.channel = brandData.channelOrProfile;
+    if (brandData.channelOrProfile)
+      updateData.channel = brandData.channelOrProfile;
   }
 
   await context.db.update(brands, { id: Number(brandId) }).set(updateData);
@@ -1155,14 +1114,7 @@ ponder.on("BRNDSEASON1:BrandUpdated", async ({ event, context }) => {
 ponder.on("BRNDSEASON1:AdminAdded", async ({ event, context }) => {
   const { admin, addedBy } = event.args;
   const { block, transaction } = event;
-  
-  console.log("Processing AdminAdded event:", {
-    admin,
-    addedBy,
-    blockNumber: block.number,
-    transactionHash: transaction.hash,
-  });
-  
+
   // Note: We're not storing admin data in a separate table since it's not in the schema
   // This is just logging the event for now. If you need to track admins,
   // you would need to add an admins table to the schema.
@@ -1171,14 +1123,7 @@ ponder.on("BRNDSEASON1:AdminAdded", async ({ event, context }) => {
 ponder.on("BRNDSEASON1:AdminRemoved", async ({ event, context }) => {
   const { admin, removedBy } = event.args;
   const { block, transaction } = event;
-  
-  console.log("Processing AdminRemoved event:", {
-    admin,
-    removedBy,
-    blockNumber: block.number,
-    transactionHash: transaction.hash,
-  });
-  
+
   // Note: We're not storing admin data in a separate table since it's not in the schema
   // This is just logging the event for now. If you need to track admins,
   // you would need to add an admins table to the schema.
