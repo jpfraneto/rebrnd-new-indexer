@@ -2,6 +2,13 @@ import { createConfig } from "ponder";
 
 import { BRNDSEASON1Abi } from "./abis/BRNDSEASON1";
 
+console.log("Environment check:", {
+  DATABASE_URL: !!process.env.DATABASE_URL,
+  PONDER_RPC_URL_8453: !!process.env.PONDER_RPC_URL_8453,
+  CONTRACT_ADDRESS: process.env.CONTRACT_ADDRESS,
+  START_BLOCK: process.env.START_BLOCK,
+});
+
 export default createConfig({
   chains: {
     base: {
