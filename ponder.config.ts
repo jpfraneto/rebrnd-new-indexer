@@ -1,6 +1,6 @@
 import { createConfig } from "ponder";
 
-import { BRNDSEASON1Abi } from "./abis/BRNDSEASON1";
+import { BRNDSEASON2Abi } from "./abis/BRNDSEASON2";
 
 console.log("Environment check:", {
   DATABASE_URL: !!process.env.DATABASE_URL,
@@ -24,7 +24,7 @@ export default createConfig({
   contracts: {
     BRNDSEASON1: {
       chain: "base",
-      abi: BRNDSEASON1Abi,
+      abi: BRNDSEASON2Abi,
       address: process.env.CONTRACT_ADDRESS as `0x${string}`,
       startBlock: parseInt(process.env.START_BLOCK || "0"),
     },

@@ -1,4 +1,4 @@
-export const BRNDSEASON1Abi = [
+export const BRNDSEASON2Abi = [
   {
     inputs: [
       { internalType: "address", name: "_brndToken", type: "address" },
@@ -486,7 +486,7 @@ export const BRNDSEASON1Abi = [
           { internalType: "string", name: "metadataHash", type: "string" },
           { internalType: "uint256", name: "createdAt", type: "uint256" },
         ],
-        internalType: "struct BRNDSeason1.Brand",
+        internalType: "struct BRNDSeason2.Brand",
         name: "",
         type: "tuple",
       },
@@ -515,7 +515,7 @@ export const BRNDSEASON1Abi = [
     inputs: [{ internalType: "uint8", name: "brndPowerLevel", type: "uint8" }],
     name: "getRewardAmount",
     outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    stateMutability: "pure",
+    stateMutability: "view",
     type: "function",
   },
   {
@@ -631,6 +631,15 @@ export const BRNDSEASON1Abi = [
       { internalType: "address", name: "newWalletAddress", type: "address" },
     ],
     name: "updateBrand",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "uint256", name: "newMultiplier", type: "uint256" },
+    ],
+    name: "updateRewardMultiplier",
     outputs: [],
     stateMutability: "nonpayable",
     type: "function",
